@@ -16,7 +16,7 @@
 
 package cn.enaium.fabric.imgui.blaze3d;
 
-import cn.enaium.fabric.imgui.TextureBinding;
+import cn.enaium.fabric.imgui.TextureBindings;
 import com.mojang.blaze3d.GpuFormat;
 import com.mojang.blaze3d.IndexType;
 import com.mojang.blaze3d.PrimitiveTopology;
@@ -85,11 +85,14 @@ public class ImGuiImplBlaze3D {
         GpuSampler sampler;
         if (texId == 1) {
             view = fontTextureView;
+            sampler = fontSampler;
         } else {
-            view = TextureBinding.getBindings().inverse().get(texId);
-            if (view == null) return false;
+            TextureBindings.TexEntry entry = TextureBindings.INSTANCE.getTexture(texId);
+            if (entry == null) return false;
+            view = entry.textureView();
+            sampler = entry.sampler();
         }
-        renderPass.bindTexture("Texture", view, fontSampler);
+        renderPass.bindTexture("Texture", view, sampler);
         return true;
     }
 
@@ -114,7 +117,7 @@ public class ImGuiImplBlaze3D {
             createFontsTexture();
         }
 
-        TextureBinding.clearStale();
+        TextureBindings.INSTANCE.clearStale();
     }
 
     /**
