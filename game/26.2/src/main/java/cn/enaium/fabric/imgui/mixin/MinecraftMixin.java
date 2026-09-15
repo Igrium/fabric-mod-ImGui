@@ -16,7 +16,6 @@
 
 package cn.enaium.fabric.imgui.mixin;
 
-import cn.enaium.fabric.imgui.command.TestCommand;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.main.GameConfig;
@@ -41,7 +40,6 @@ public class MinecraftMixin {
     @Inject(method = "<init>", at = @At("RETURN"))
     public void initImGui(GameConfig gameConfig, CallbackInfo ci) {
         IMGUI.create(window.handle());
-        TestCommand.register();
     }
 
     @Inject(method = "close", at = @At("HEAD"))
