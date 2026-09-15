@@ -16,6 +16,7 @@
 
 package cn.enaium.fabric.imgui.blaze3d;
 
+import cn.enaium.fabric.imgui.TextureBindings;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.renderpearl.api.GpuFormat;
 import com.mojang.renderpearl.api.buffers.GpuBuffer;
@@ -73,6 +74,34 @@ public class ImGuiImplBlaze3D {
     private final ImVec4 reusableClipRect = new ImVec4();
 
     /**
+     * Binds the texture associated with an ImGui texture id.
+     *
+     * @param renderPass pass to bind on
+     * @param texId      ImGui texture id ({@code 1} is the font atlas)
+     * @return false when the id is unknown and the draw command must be skipped
+     */
+    private boolean bindDrawTexture(final RenderPass renderPass, final long texId) {
+        final GpuTextureView view;
+        final GpuSampler sampler;
+        if (texId == 1) {
+            view = fontTextureView;
+            sampler = fontSampler;
+        } else {
+            final TextureBindings.TexEntry entry = TextureBindings.INSTANCE.getTexture(texId);
+            if (entry == null) {
+                return false;
+            }
+            view = entry.textureView();
+            sampler = entry.sampler();
+        }
+        if (view == null || sampler == null) {
+            return false;
+        }
+        renderPass.setUniform("Texture", view, sampler);
+        return true;
+    }
+
+    /**
      * Ensures the rendering pipeline and font texture are ready for the current frame.
      * Must be called each frame before rendering.
      */
@@ -91,6 +120,8 @@ public class ImGuiImplBlaze3D {
         if (fontTexture == null) {
             createFontsTexture();
         }
+
+        TextureBindings.INSTANCE.clearStale();
     }
 
     /**
@@ -304,7 +335,6 @@ public class ImGuiImplBlaze3D {
 
         renderPass.setPipeline(compiledPipeline);
         renderPass.setUniform("ProjMtx", projMatrixUniform);
-        renderPass.setUniform("Texture", fontTextureView, fontSampler);
 
         final float clipOffX = drawData.getDisplayPosX();
         final float clipOffY = drawData.getDisplayPosY();
@@ -348,6 +378,10 @@ public class ImGuiImplBlaze3D {
                 final int scissorH = (int) (clipMaxY - clipMinY);
 
                 renderPass.enableScissor(scissorX, scissorY, scissorW, scissorH);
+
+                if (!bindDrawTexture(renderPass, drawData.getCmdListCmdBufferTextureId(n, cmdI))) {
+                    continue;
+                }
 
                 final int elemCount = drawData.getCmdListCmdBufferElemCount(n, cmdI);
                 final int idxBufferOffset = drawData.getCmdListCmdBufferIdxOffset(n, cmdI);
