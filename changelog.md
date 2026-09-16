@@ -1,3 +1,3 @@
 ## 🆕 Features
 
-- SDL3 window support
+- Texture support
